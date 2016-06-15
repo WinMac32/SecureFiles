@@ -103,4 +103,25 @@ public class Utils {
         }).start();
     }
 
+    public static void bufferedRead(byte[] dest, InputStream input) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read, total = 0;
+
+        while ((read = input.read(buffer, 0, dest.length - total)) != -1 && total < dest.length) {
+            System.arraycopy(buffer, 0, dest, total, read);
+            total += read;
+        }
+    }
+
+    public static String toHex(byte[] bytes) {
+        char[] hexArray = "0123456789ABCDEF".toCharArray();
+        char[] hexChars = new char[bytes.length * 2];
+        for ( int j = 0; j < bytes.length; j++ ) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = hexArray[v >>> 4];
+            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+        }
+        return new String(hexChars);
+    }
+
 }
