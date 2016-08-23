@@ -12,7 +12,7 @@
         <repository>
             <id>viaware-repo</id>
             <name>viaware-repo-releases</name>
-            <url>http://repo.viaware.ca/artifactory/viaware-release</url>
+            <url>http://www.viaware.ca/maven</url>
         </repository>
     </repositories>
 
