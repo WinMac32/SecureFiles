@@ -20,6 +20,7 @@ package ca.viaware.securefiles;
 
 import ca.viaware.api.logging.Log;
 import ca.viaware.securefiles.editor.SecureFileEditor;
+import ca.viaware.securefiles.persistence.InvalidFileException;
 import ca.viaware.securefiles.persistence.SecureFile;
 import ca.viaware.securefiles.security.InvalidPassException;
 
@@ -38,6 +39,9 @@ public class SecureFiles {
             return secureFile;
         } catch (InvalidPassException e) {
             Log.error("Invalid key");
+        } catch (InvalidFileException e) {
+            Log.error("This is not a valid SecureFiles package");
+            return null;
         }
         return login(file);
     }
@@ -64,6 +68,8 @@ public class SecureFiles {
                     Utils.clear(pass, confirm);
                     return file;
                 } catch (InvalidPassException e) {
+                    e.printStackTrace();
+                } catch (InvalidFileException e) {
                     e.printStackTrace();
                 }
             } else {

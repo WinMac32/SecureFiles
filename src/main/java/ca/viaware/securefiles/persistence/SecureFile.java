@@ -22,6 +22,7 @@ import ca.viaware.api.logging.Log;
 import ca.viaware.securefiles.Utils;
 import ca.viaware.securefiles.editor.SecureFileEditor;
 import ca.viaware.securefiles.model.SecurePackage;
+import ca.viaware.securefiles.security.EncryptedData;
 import ca.viaware.securefiles.security.Encryptor;
 import ca.viaware.securefiles.security.InvalidPassException;
 
@@ -38,12 +39,14 @@ public class SecureFile {
             HEADER = "!SECUREFILE!".getBytes();
         }
     }
+    private static long FILE_MAGIC = 0xE5168D45195ADF22L;
+    private static short VERSION = 2;
 
     private File file;
     private SecurePackage securePackage;
     private Encryptor encryptor;
 
-    public SecureFile(File file, char[] pass, boolean isNew) throws InvalidPassException {
+    public SecureFile(File file, char[] pass, boolean isNew) throws InvalidPassException, InvalidFileException {
         this.file = file;
         this.encryptor = new Encryptor(pass);
         if (isNew) securePackage = new SecurePackage();
@@ -62,18 +65,38 @@ public class SecureFile {
         return save(securePackage, file);
     }
 
-    private SecurePackage load(File file) throws InvalidPassException {
+    private SecurePackage load(File file) throws InvalidPassException, InvalidFileException {
         Log.info("Loading %0...", file.getAbsolutePath());
         try {
             InputStream input = new FileInputStream(file);
-            byte[] bytes = new byte[(int) file.length()];
-            byte[] buffer = new byte[1024];
-            int read, total = 0;
-            while ((read = input.read(buffer)) != -1) {
-                System.arraycopy(buffer, 0, bytes, total, read);
-                total += read;
+            DataInputStream dataIn = new DataInputStream(input);
+            long magic = dataIn.readLong();
+            if (magic != FILE_MAGIC) throw new InvalidFileException();
+
+            //Version is useless for now but exists in case backwards compatibility
+            //becomes a problem.
+            int version = dataIn.readShort();
+            Log.info("Binary using SecureFiles version %0", version);
+
+            int saltLength = dataIn.readByte();
+            byte[] salt = new byte[saltLength];
+            Utils.bufferedRead(salt, dataIn);
+
+            boolean hasIv = dataIn.readBoolean();
+            byte[] iv = null;
+            if (hasIv) {
+                int ivLength = dataIn.readByte();
+                iv = new byte[ivLength];
+                Utils.bufferedRead(iv, dataIn);
             }
-            byte[] decrypted = encryptor.decrypt(bytes);
+
+            int dataLength = dataIn.readInt();
+            byte[] cipherText = new byte[dataLength];
+            Utils.bufferedRead(cipherText, dataIn);
+
+            EncryptedData encryptedData = new EncryptedData(cipherText, salt, iv);
+
+            byte[] decrypted = encryptor.decrypt(encryptedData);
             if (decrypted == null) throw new InvalidPassException();
             ByteArrayInputStream data = new ByteArrayInputStream(decrypted);
             for (byte b : HEADER) {
@@ -97,10 +120,27 @@ public class SecureFile {
             byte[] bytes = new byte[serialized.length + HEADER.length];
             System.arraycopy(HEADER, 0, bytes, 0, HEADER.length);
             System.arraycopy(serialized, 0, bytes, HEADER.length, serialized.length);
-            byte[] encrypted = encryptor.encrypt(bytes);
+
+            EncryptedData encrypted = encryptor.encrypt(bytes);
             OutputStream out = new FileOutputStream(file);
-            out.write(encrypted);
-            out.close();
+            DataOutputStream dataOut = new DataOutputStream(out);
+
+            dataOut.writeLong(FILE_MAGIC);
+            dataOut.writeShort(VERSION);
+
+            dataOut.writeByte(encrypted.getSalt().length);
+            dataOut.write(encrypted.getSalt());
+
+            dataOut.writeBoolean(encrypted.hasIv());
+            if (encrypted.hasIv()) {
+                dataOut.writeByte(encrypted.getIv().length);
+                dataOut.write(encrypted.getIv());
+            }
+
+            dataOut.writeInt(encrypted.getCipherText().length);
+            dataOut.write(encrypted.getCipherText());
+
+            dataOut.close();
             Log.info("Done.");
             return true;
         } catch (FileNotFoundException e) {

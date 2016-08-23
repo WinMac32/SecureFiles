@@ -103,4 +103,14 @@ public class Utils {
         }).start();
     }
 
+    public static void bufferedRead(byte[] dest, InputStream input) throws IOException {
+        byte[] buffer = new byte[1024];
+        int read, total = 0;
+
+        while ((read = input.read(buffer, 0, dest.length - total)) != -1 && total < dest.length) {
+            System.arraycopy(buffer, 0, dest, total, read);
+            total += read;
+        }
+    }
+
 }
