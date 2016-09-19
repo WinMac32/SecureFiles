@@ -30,7 +30,7 @@ import java.io.*;
 
 public class SecureFile {
 
-    public static byte[] HEADER;
+    private static byte[] HEADER;
     static {
         try {
             HEADER = "!SECUREFILE!".getBytes("UTF-8");
@@ -104,8 +104,6 @@ public class SecureFile {
             }
             Log.info("Done.");
             return new Serializer().deserialize(data);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

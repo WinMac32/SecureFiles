@@ -18,6 +18,7 @@ along with SecureFiles.  If not, see <http://www.gnu.org/licenses/>.
  */
 package ca.viaware.securefiles.model;
 
+import ca.viaware.securefiles.model.entry.SecureImage;
 import ca.viaware.securefiles.model.entry.SecureString;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,9 +27,10 @@ public abstract class SecureEntry {
 
     private String title;
 
-    private static HashMap<String, Class<? extends SecureEntry>> entryTypes = new HashMap<String, Class<? extends SecureEntry>>();
+    private static HashMap<String, Class<? extends SecureEntry>> entryTypes = new HashMap<>();
     static {
         entryTypes.put("string", SecureString.class);
+        entryTypes.put("image", SecureImage.class);
     }
 
     public SecureEntry() {
@@ -49,12 +51,14 @@ public abstract class SecureEntry {
     public static SecureEntry initialize(String type) {
         try {
             return entryTypes.get(type).newInstance();
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
+        } catch (InstantiationException | IllegalAccessException e) {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String[] getTypes() {
+        return entryTypes.keySet().toArray(new String[0]);
     }
 
     public String getTitle() {

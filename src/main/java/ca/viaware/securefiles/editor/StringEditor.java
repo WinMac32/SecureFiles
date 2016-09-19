@@ -29,22 +29,21 @@ import javax.swing.text.BadLocationException;
 import java.awt.*;
 import java.awt.event.*;
 
-public class StringEditor implements ActionListener {
+public class StringEditor extends Editor<SecureString> implements ActionListener {
 
-    private SecureString entry;
     private AdvancedTextArea textArea;
 
     public StringEditor(SecureString entry) {
-        this.entry = entry;
+        super(entry);
         initGui();
     }
 
     private void initGui() {
-        final VFrame frame = new VFrame("String Editor - " + entry.getTitle());
+        final VFrame frame = new VFrame("String Editor - " + getEntry().getTitle());
 
         VPanel panel = frame.getMainPanel();
         panel.setLayout(new BorderLayout());
-        textArea = new AdvancedTextArea(entry.getString(), this);
+        textArea = new AdvancedTextArea(getEntry().getString(), this);
         textArea.setFont(new Font("monospaced", Font.PLAIN, 12));
         panel.add(new JScrollPane(textArea), BorderLayout.CENTER);
 
@@ -89,7 +88,7 @@ public class StringEditor implements ActionListener {
     }
 
     private void save() {
-        entry.setString(textArea.getText());
+        getEntry().setString(textArea.getText());
         textArea.setModified(false);
     }
 }
